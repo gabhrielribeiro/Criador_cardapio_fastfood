@@ -147,7 +147,7 @@ txt+=`\nForma de pagamento: ${pagamento}`;
 if(pagamento==="Dinheiro")txt+=`\nTroco para: R$ ${troco}`;
 if(observacoes)txt+=`\nObservacoes: ${observacoes}`;
 // DJANGO: trocar 5500000000000 pelo numero vindo do backend/configuracao da loja.
-window.open("https://wa.me/5500000000000?text="+encodeURIComponent(txt),"_blank");
+window.open("https://wa.me/{{ cardapio.whats}}?text="+encodeURIComponent(txt),"_blank");
 }
 </script>
 {% endblock %}

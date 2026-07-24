@@ -17,6 +17,7 @@ class Cardapio(models.Model):
     lanchonete = models.CharField(max_length=50)
     endereco = models.TextField()
     disponivel = models.CharField(max_length=50)
+    whats = models.CharField(null=True, blank=True)
     slug = models.SlugField(max_length=100)
 
     def __str__(self):
