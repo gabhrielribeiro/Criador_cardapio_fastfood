@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block titulo %}{% if cardapio %}{{ cardapio.lanchonete }}{% else %}Cardápio{% endif %}{% endblock %}
+
+{% block conteudo %}
+<header class="hero" style="{% if cardapio.banner %} background:url('{{cardapio.banner.url}}') center/cover; {% else %} background:url('https://images.unsplash.com/photo-1550547660-d9450f859349?q=80&w=1600&auto=format&fit=crop') center/cover;position:relative; {% endif %}">
+<!-- DJANGO: esses dados da loja podem vir do banco/configuracao: logo, nome, endereco e horario. -->
+<img class="logo" src="{% if cardapio.logo%}{{cardapio.logo.url}} {% else %} https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=400&auto=format&fit=crop {% endif %}">
+<h1>{{cardapio.lanchonete}}</h1>
+<p>{{cardapio.endereco}}</p>
+<div class="status">{{cardapio.disponivel}}</div>
+</header>
+
+<div class="container">
+    
+<h2>Conheça nosso menu</h2>
+<div class="grid" id="menu">
+<!-- DJANGO: loop
+
+-->
+
+{% for lanche in lanches %}
+<div class="card">
+<img src="{{lanche.capa.url}}">
+<div class="info">
+<h3>{{lanche.titulo}}</h3>
+<p>{{lanche.desc}}</p>
+<div class="price">R$ {{lanche.preco}}</div>
+</div>
+<!-- DJANGO: aqui o botao precisa chamar add('{{ produto.nome|escapejs }}', {{ produto.preco }}). -->
+<button class="add" onclick="add('{{ lanche.titulo|escapejs }}', '{{ lanche.preco|escapejs }}' ) "><i class="fa fa-cart-shopping"></i></button>
+</div>
+{% endfor %}
+</div>
+<h2 class="secao">Bebidas</h2>
+<div class="grid" id="bebidas">
+{% for bebida in bebidas %}
+<div class="card">
+<img src="{{bebida.capa.url}}">
+<div class="info">
+<h3>{{bebida.titulo}}</h3>
+<p>{{bebida.desc}}</p>
+<div class="price">R$ {{bebida.preco}}</div>
+</div>
+<!-- DJANGO: aqui tambem vira add('{{ produto.nome|escapejs }}', {{ produto.preco }}). -->
+<button class="add" onclick="add('{{ bebida.titulo|escapejs }}', '{{ bebida.preco|escapejs  }}' )"><i class="fa fa-cart-shopping"></i></button>
+</div>
+{% endfor %}
+</div>
+</div>
+
+<div class="bar" onclick="abrir()"><span id="contador">(0)</span> Veja seu carrinho <i class="fa fa-cart-shopping"></i></div>
+
+<div class="modal" id="modal">
+<div class="box">
+<h3 style="text-align:center">Seu carrinho</h3>
+<div id="lista"></div>
+<hr class="linha">
+<div class="total">Total: R$ <span id="total">0,00</span></div>
+<label>Nome</label>
+<input id="nome" placeholder="Digite seu nome">
+<label>Endereço</label>
+<input id="endereco" placeholder="Digite seu endereço completo">
+<label>Forma de pagamento</label>
+<select id="pagamento" onchange="toggleTroco()">
+<option>Pix</option>
+<option>Cartão</option>
+<option>Dinheiro</option>
+</select>
+<div class="troco" id="trocoBox">
+<label>Troco para</label>
+<input id="troco" placeholder="Ex: 100,00">
+</div>
+<label>Observações</label>
+<textarea id="observacoes" placeholder="Ex: sem cebola, ponto da carne, referencia..."></textarea>
+<div class="actions">
+<button onclick="fechar()">Fechar</button>
+<button class="green" onclick="pedido()">Finalizar pedido</button>
+</div>
+</div>
+</div>
+
+<script>
+let carrinho=[];
+function add(nome,preco){
+let item=carrinho.find(x=>x.nome==nome);
+if(item)item.qtd++;
+else carrinho.push({nome:nome,preco:preco,qtd:1});
+render();
+}
+function render(){
+document.getElementById("contador").innerText="("+carrinho.reduce((a,b)=>a+b.qtd,0)+")";
+let html="",total=0;
+carrinho.forEach((p,i)=>{
+total+=p.preco*p.qtd;
+html+=`<div class="item">
+<div>✔ ${p.qtd}x ${p.nome}</div>
+<div class="qty">
+<button onclick="menos(${i})">-</button>
+<button onclick="mais(${i})">+</button>
+</div>
+</div>`;
+});
+document.getElementById("lista").innerHTML=html||"<p>Carrinho vazio.</p>";
+document.getElementById("total").innerText=total.toFixed(2).replace(".",",");
+}
+function mais(i){carrinho[i].qtd++;render();}
+function menos(i){carrinho[i].qtd--;if(carrinho[i].qtd<=0)carrinho.splice(i,1);render();}
+function abrir(){document.getElementById("modal").style.display="flex";}
+function fechar(){document.getElementById("modal").style.display="none";}
+function toggleTroco(){
+let pagamento=document.getElementById("pagamento").value;
+document.getElementById("trocoBox").style.display=pagamento==="Dinheiro"?"block":"none";
+}
+function pedido(){
+let nome=document.getElementById("nome").value.trim();
+let endereco=document.getElementById("endereco").value.trim();
+let pagamento=document.getElementById("pagamento").value;
+let troco=document.getElementById("troco").value.trim();
+let observacoes=document.getElementById("observacoes").value.trim();
+if(carrinho.length===0){
+alert("Seu carrinho esta vazio.");
+return;
+}
+if(!nome){
+alert("Digite seu nome.");
+return;
+}
+if(!endereco){
+alert("Digite seu endereco completo.");
+return;
+}
+if(pagamento==="Dinheiro"&&!troco){
+alert("Digite o valor para troco.");
+return;
+}
+let txt="*Pedido Red Burguer*\n\n*Seu carrinho*\n";
+// DJANGO: se o nome da loja for dinamico, passe no template e use aqui tambem.
+let total=0;
+carrinho.forEach(p=>{txt+=`✔ ${p.qtd}x ${p.nome}\n`;total+=p.preco*p.qtd;});
+txt+=`\n----------------\n`;
+txt+=`\nTotal: R$ ${total.toFixed(2).replace(".",",")}`;
+txt+=`\n\nNome: ${nome}`;
+txt+=`\nEndereco: ${endereco}`;
+txt+=`\nForma de pagamento: ${pagamento}`;
+if(pagamento==="Dinheiro")txt+=`\nTroco para: R$ ${troco}`;
+if(observacoes)txt+=`\nObservacoes: ${observacoes}`;
+// DJANGO: trocar 5500000000000 pelo numero vindo do backend/configuracao da loja.
+window.open("https://wa.me/5500000000000?text="+encodeURIComponent(txt),"_blank");
+}
+</script>
+{% endblock %}
